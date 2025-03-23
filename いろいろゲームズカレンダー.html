@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>共有カレンダー</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7fb;
+            color: #333;
+            text-align: center;
+        }
+
+        h1 {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            margin: 0;
+        }
+
+        #calendar {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(100px, 1fr));
+            gap: 10px;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .day {
+            padding: 15px;
+            border: 2px solid #ddd;
+            text-align: center;
+            font-size: 18px;
+            border-radius: 8px;
+            background-color: #fff;
+            cursor: pointer;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .day.header {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .event {
+            font-size: 14px;
+            color: white;
+            background-color: #4CAF50;
+            padding: 5px;
+            border-radius: 5px;
+            margin-top: 5px;
+            width: 90%;
+            cursor: pointer;
+        }
+
+        #eventModal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        #eventModal input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        #eventModal button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        .delete-btn {
+            background-color: red;
+            color: white;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>共有カレンダー</h1>
+    <div>
+        <label for="year">年:</label>
+        <input type="number" id="year" value="2024" min="2000" max="2100">
+        <label for="month">月:</label>
+        <input type="number" id="month" value="3" min="1" max="12">
+        <button onclick="updateCalendar()">表示</button>
+    </div>
+    <div id="calendar"></div>
+    
+    <div id="eventModal">
+        <h2>予定を追加・編集</h2>
+        <input type="text" id="eventTitle" placeholder="イベント名">
+        <button onclick="saveEvent()">保存</button>
+        <button class="delete-btn" onclick="deleteEvent()">削除</button>
+        <button onclick="closeModal()">キャンセル</button>
+    </div>
+
+    <script>
+        let events = JSON.parse(localStorage.getItem("events")) || {}; 
+        let selectedDate = "";
+        let selectedEventIndex = null;
+
+        function generateCalendar(year, month) {
+            const calendar = document.getElementById("calendar");
+            calendar.innerHTML = "";
+
+            const daysOfWeek = ["日", "月", "火", "水", "木", "金", "土"];
+            daysOfWeek.forEach(day => {
+                const div = document.createElement("div");
+                div.classList.add("day", "header");
+                div.textContent = day;
+                calendar.appendChild(div);
+            });
+
+            const firstDay = new Date(year, month - 1, 1).getDay();
+            const lastDate = new Date(year, month, 0).getDate();
+
+            for (let i = 0; i < firstDay; i++) {
+                calendar.appendChild(document.createElement("div"));
+            }
+
+            for (let day = 1; day <= lastDate; day++) {
+                const div = document.createElement("div");
+                div.classList.add("day");
+                div.textContent = day;
+                div.onclick = () => openModal(year, month, day);
+
+                if (events[`${year}-${month}-${day}`]) {
+                    events[`${year}-${month}-${day}`].forEach((eventText, index) => {
+                        const eventDiv = document.createElement("div");
+                        eventDiv.classList.add("event");
+                        eventDiv.textContent = eventText;
+                        eventDiv.onclick = (e) => {
+                            e.stopPropagation();
+                            openEditModal(year, month, day, index);
+                        };
+                        div.appendChild(eventDiv);
+                    });
+                }
+
+                calendar.appendChild(div);
+            }
+        }
+
+        function openModal(year, month, day) {
+            selectedDate = `${year}-${month}-${day}`;
+            selectedEventIndex = null;
+            document.getElementById("eventTitle").value = "";
+            document.querySelector(".delete-btn").style.display = "none";
+            document.getElementById("eventModal").style.display = "block";
+        }
+
+        function openEditModal(year, month, day, index) {
+            selectedDate = `${year}-${month}-${day}`;
+            selectedEventIndex = index;
+            document.getElementById("eventTitle").value = events[selectedDate][index];
+            document.querySelector(".delete-btn").style.display = "block";
+            document.getElementById("eventModal").style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById("eventModal").style.display = "none";
+        }
+
+        function saveEvent() {
+            const eventText = document.getElementById("eventTitle").value;
+            if (eventText) {
+                if (!events[selectedDate]) {
+                    events[selectedDate] = [];
+                }
+                if (selectedEventIndex !== null) {
+                    events[selectedDate][selectedEventIndex] = eventText;
+                } else {
+                    events[selectedDate].push(eventText);
+                }
+            }
+            localStorage.setItem("events", JSON.stringify(events));
+            closeModal();
+            updateCalendar();
+        }
+
+        function deleteEvent() {
+            if (selectedEventIndex !== null) {
+                events[selectedDate].splice(selectedEventIndex, 1);
+                if (events[selectedDate].length === 0) {
+                    delete events[selectedDate];
+                }
+            }
+            localStorage.setItem("events", JSON.stringify(events));
+            closeModal();
+            updateCalendar();
+        }
+
+        function updateCalendar() {
+            const year = parseInt(document.getElementById("year").value);
+            const month = parseInt(document.getElementById("month").value);
+            generateCalendar(year, month);
+        }
+
+        const today = new Date();
+        document.getElementById("year").value = today.getFullYear();
+        document.getElementById("month").value = today.getMonth() + 1;
+        generateCalendar(today.getFullYear(), today.getMonth() + 1);
+    </script>
+</body>
+</html>
