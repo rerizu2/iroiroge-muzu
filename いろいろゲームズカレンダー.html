@@ -10,6 +10,8 @@
             background-color: #f4f7fb;
             color: #333;
             text-align: center;
+            margin: 0;
+            padding: 0;
         }
 
         h1 {
@@ -19,30 +21,40 @@
             margin: 0;
         }
 
+        #controls {
+            margin: 15px 0;
+        }
+
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+        }
+
         #calendar {
             display: grid;
-            grid-template-columns: repeat(7, minmax(100px, 1fr));
-            gap: 10px;
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            max-width: 90%;
+            margin: 10px auto;
+            padding: 10px;
             background-color: #fff;
             border-radius: 10px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
         }
 
         .day {
-            padding: 15px;
+            padding: 10px;
             border: 2px solid #ddd;
             text-align: center;
-            font-size: 18px;
+            font-size: 16px;
             border-radius: 8px;
             background-color: #fff;
             cursor: pointer;
-            min-height: 100px;
+            min-height: 80px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
         }
 
         .day.header {
@@ -51,12 +63,12 @@
         }
 
         .event {
-            font-size: 14px;
+            font-size: 12px;
             color: white;
             background-color: #4CAF50;
             padding: 5px;
             border-radius: 5px;
-            margin-top: 5px;
+            margin-top: 3px;
             width: 90%;
             cursor: pointer;
         }
@@ -68,11 +80,11 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background-color: #fff;
-            padding: 25px;
+            padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-            max-width: 400px;
-            width: 100%;
+            max-width: 350px;
+            width: 80%;
             z-index: 1000;
         }
 
@@ -94,11 +106,29 @@
             color: white;
             display: none;
         }
+
+        /* 小さい画面向け */
+        @media (max-width: 600px) {
+            #calendar {
+                grid-template-columns: repeat(7, minmax(30px, 1fr));
+                gap: 3px;
+            }
+
+            .day {
+                font-size: 14px;
+                min-height: 60px;
+            }
+
+            .event {
+                font-size: 10px;
+                padding: 3px;
+            }
+        }
     </style>
 </head>
 <body>
     <h1>共有カレンダー</h1>
-    <div>
+    <div id="controls">
         <label for="year">年:</label>
         <input type="number" id="year" value="2024" min="2000" max="2100">
         <label for="month">月:</label>
@@ -200,11 +230,9 @@
         }
 
         function deleteEvent() {
-            if (selectedEventIndex !== null) {
-                events[selectedDate].splice(selectedEventIndex, 1);
-                if (events[selectedDate].length === 0) {
-                    delete events[selectedDate];
-                }
+            events[selectedDate].splice(selectedEventIndex, 1);
+            if (events[selectedDate].length === 0) {
+                delete events[selectedDate];
             }
             localStorage.setItem("events", JSON.stringify(events));
             closeModal();
@@ -212,15 +240,10 @@
         }
 
         function updateCalendar() {
-            const year = parseInt(document.getElementById("year").value);
-            const month = parseInt(document.getElementById("month").value);
-            generateCalendar(year, month);
+            generateCalendar(parseInt(document.getElementById("year").value), parseInt(document.getElementById("month").value));
         }
 
-        const today = new Date();
-        document.getElementById("year").value = today.getFullYear();
-        document.getElementById("month").value = today.getMonth() + 1;
-        generateCalendar(today.getFullYear(), today.getMonth() + 1);
+        generateCalendar(new Date().getFullYear(), new Date().getMonth() + 1);
     </script>
 </body>
 </html>
